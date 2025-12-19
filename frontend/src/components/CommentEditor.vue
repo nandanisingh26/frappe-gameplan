@@ -61,12 +61,53 @@ export default {
   emits: ['change', 'rich-quote', 'rich-quote-click'],
   expose: ['editor'],
   components: { TextEditor, TextEditorFixedMenu, EditorContent },
-  computed: {
+  computed: (   
     editor() {
       return this.$refs.textEditor.editor
     },
-    mounted() {
-  this.registerAttachmentCommand()
+   mounted() {
+    this.registerAttachmentCommand()
+  },
+  methods: {
+  registerAttachmentCommand() {
+    const editor = this.editor
+    if (!editor) return
+
+    editor.commands.attachment = () => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = '.pdf,.xls,.xlsx'
+
+      input.onchange = async () => {
+        const file = input.files[0]
+        if (!file) return
+
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('is_private', 0)
+
+        const res = await fetch('/api/method/upload_file', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        })
+
+        const data = await res.json()
+        const fileUrl = data.message.file_url
+
+        editor
+          .chain()
+          .focus()
+          .insertContent(
+            `<p><a href="${fileUrl}" target="_blank">📎 ${file.name}</a></p>`
+          )
+          .run()
+      }
+
+      input.click()
+      return true
+    }
+  },
 },
 
     textEditorMenuButtons() {
