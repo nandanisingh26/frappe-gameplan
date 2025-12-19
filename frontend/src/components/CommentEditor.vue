@@ -65,6 +65,10 @@ export default {
     editor() {
       return this.$refs.textEditor.editor
     },
+    mounted() {
+  this.registerAttachmentCommand()
+},
+
     textEditorMenuButtons() {
       return [
         'Paragraph',
@@ -83,6 +87,7 @@ export default {
         'Separator',
         'Image',
         'Video',
+        'Attachment',
         'Iframe',
         'Link',
         'Blockquote',
