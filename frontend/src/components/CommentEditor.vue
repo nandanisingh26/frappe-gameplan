@@ -1,30 +1,3 @@
-<template>
-  <TextEditor
-    ref="textEditor"
-    :editor-class="['prose-sm max-w-none', editable && 'min-h-[4rem]']"
-    :content="value"
-    @change="editable ? $emit('change', $event) : null"
-    :starterkit-options="{ heading: { levels: [2, 3, 4, 5, 6] } }"
-    :placeholder="placeholder"
-    :editable="editable"
-    @rich-quote="$emit('rich-quote', $event)"
-    @rich-quote-click="$emit('rich-quote-click', $event)"
-  >
-    <template v-slot:editor="{ editor }">
-      <EditorContent :class="[editable && 'max-h-[50vh] overflow-y-auto']" :editor="editor" />
-    </template>
-    <template v-slot:bottom>
-      <div v-if="editable" class="mt-2 flex flex-col justify-between sm:flex-row sm:items-center">
-        <TextEditorFixedMenu class="-ml-1 overflow-x-auto" :buttons="textEditorMenuButtons" />
-        <div class="mt-2 flex items-center justify-end space-x-2 sm:mt-0">
-          <Button v-bind="discardButtonProps || {}"> Discard </Button>
-          <Button variant="solid" v-bind="submitButtonProps || {}"> Submit </Button>
-        </div>
-      </div>
-    </template>
-  </TextEditor>
-</template>
-
 <script>
 import { EditorContent } from '@tiptap/vue-3'
 import TextEditor from '@/components/TextEditor.vue'
@@ -32,83 +5,25 @@ import { TextEditorFixedMenu } from 'frappe-ui/src/components/TextEditor'
 
 export default {
   name: 'CommentEditor',
+
+  components: { TextEditor, TextEditorFixedMenu, EditorContent },
+
   props: {
-    value: {
-      type: String,
-      default: '',
-    },
-    placeholder: {
-      type: String,
-      default: null,
-    },
-    editable: {
-      type: Boolean,
-      default: true,
-    },
-    editorProps: {
-      type: Object,
-      default: () => ({}),
-    },
-    submitButtonProps: {
-      type: Object,
-      default: () => ({}),
-    },
-    discardButtonProps: {
-      type: Object,
-      default: () => ({}),
-    },
+    value: { type: String, default: '' },
+    placeholder: { type: String, default: null },
+    editable: { type: Boolean, default: true },
+    editorProps: { type: Object, default: () => ({}) },
+    submitButtonProps: { type: Object, default: () => ({}) },
+    discardButtonProps: { type: Object, default: () => ({}) },
   },
+
   emits: ['change', 'rich-quote', 'rich-quote-click'],
   expose: ['editor'],
-  components: { TextEditor, TextEditorFixedMenu, EditorContent },
-  computed: (   
+
+  computed: {
     editor() {
-      return this.$refs.textEditor.editor
+      return this.$refs.textEditor?.editor
     },
-   mounted() {
-    this.registerAttachmentCommand()
-  },
-  methods: {
-  registerAttachmentCommand() {
-    const editor = this.editor
-    if (!editor) return
-
-    editor.commands.attachment = () => {
-      const input = document.createElement('input')
-      input.type = 'file'
-      input.accept = '.pdf,.xls,.xlsx'
-
-      input.onchange = async () => {
-        const file = input.files[0]
-        if (!file) return
-
-        const formData = new FormData()
-        formData.append('file', file)
-        formData.append('is_private', 0)
-
-        const res = await fetch('/api/method/upload_file', {
-          method: 'POST',
-          body: formData,
-          credentials: 'include',
-        })
-
-        const data = await res.json()
-        const fileUrl = data.message.file_url
-
-        editor
-          .chain()
-          .focus()
-          .insertContent(
-            `<p><a href="${fileUrl}" target="_blank">📎 ${file.name}</a></p>`
-          )
-          .run()
-      }
-
-      input.click()
-      return true
-    }
-  },
-},
 
     textEditorMenuButtons() {
       return [
@@ -150,6 +65,52 @@ export default {
           'DeleteTable',
         ],
       ]
+    },
+  },
+
+  mounted() {
+    this.registerAttachmentCommand()
+  },
+
+  methods: {
+    registerAttachmentCommand() {
+      const editor = this.editor
+      if (!editor) return
+
+      editor.commands.attachment = () => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = '.pdf,.xls,.xlsx'
+
+        input.onchange = async () => {
+          const file = input.files[0]
+          if (!file) return
+
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('is_private', 0)
+
+          const res = await fetch('/api/method/upload_file', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+          })
+
+          const data = await res.json()
+          const fileUrl = data.message.file_url
+
+          editor
+            .chain()
+            .focus()
+            .insertContent(
+              `<p><a href="${fileUrl}" target="_blank">📎 ${file.name}</a></p>`
+            )
+            .run()
+        }
+
+        input.click()
+        return true
+      }
     },
   },
 }
